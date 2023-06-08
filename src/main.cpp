@@ -383,9 +383,10 @@ int main()
         ImGui::Begin("Down");
         ImGui::SetNextItemWidth(viewport->Size.x - 150);
         ImGui::SliderFloat("##labelHorisontal", &OffsetX, 0, 1000., "");
-
-        bool result = ImGui::ColorPicker3("Color", *&col);
-        Colorcur = sf::Color((int)col[0] * 255, (int)col[1] * 255, (int)col[2] * 255);
+        ImGui::PushItemWidth(100);
+        bool result = ImGui::ColorPicker3("Color", col);
+        
+        Colorcur = sf::Color(col[0] * 255, col[1] * 255, col[2] * 255);
 
         ImGui::End();
         window.clear();
