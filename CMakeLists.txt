@@ -6,7 +6,11 @@ add_definitions(-std=c++14)
 file(GLOB IMGUI_FILES "${CMAKE_CURRENT_SOURCE_DIR}/imgui/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/imgui/*.cpp")
 
 add_executable(SFML_IMGUI
-	main.cpp ${IMGUI_FILES}
+	src/main.cpp 
+	src/EdgesVerteces.h
+	src/Algorithms.hpp
+	src/LoadSave.hpp
+	 ${IMGUI_FILES}
 )
 
 source_group("Imgui" FILES ${IMGUI_FILES})
