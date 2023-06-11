@@ -17,6 +17,7 @@
 #include <SFML/System/Clock.hpp>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Graphics/CircleShape.hpp>
+#include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Clock.hpp>
 #include <SFML/Window/Event.hpp>
@@ -78,29 +79,43 @@ int main()
     bool SaveWinVisible = false;
     bool LoadWinVisible = false;
     bool BlockDrawing = false;
-
     bool DrawLineBegin = true;
+
     const int Radius = 20;
     static int State = 0;
-    int ImGuiWindowX = 0;
-    int ImGuiWindowY = 0;
-    int ImGuiWindowSizeX = 0;
-    int ImGuiWindowSizeY = 0;
 
     float OffsetX = 0, OffsetY = 0, SliderVal = 1000;
     float col[3] = {0, 1., 0};
 
     float CurrentColor;
     sf::Clock deltaClock;
-    sf::Color Colorcur = sf::Color::Green;
+    sf::Color ColorVert = sf::Color::Green;
+    sf::Color ColorEdge = sf::Color::White;
+    sf::Color ColorBackground = sf::Color::Black;
+
+    ImVec2 BottomPanelSize(0, 0);
+    ImVec2 BottomPanelPos(0, 0);
+    ImVec2 RightPanelSize(0, 0);
+    ImVec2 RightPanelPos(0, 0);
 
     std::list<Edge>::iterator ResultEdge;
     std::list<Vertex>::iterator ResultVert;
+
+    Vertex* SelectedVertex = nullptr;
+    Edge* SelectedEdge = nullptr;
     std::list<Vertex> Verteces;
     std::list<Edge> Edges;
     sf::Vector2f CirclePosition;
     Edge NewEdge;
 
+    enum Selected
+    {
+        VERTEX,
+        EDGE,
+        BACKGROUND,
+        NONE
+    }Clicked;
+    Clicked = NONE;
 
     while (window.isOpen())
     {
@@ -109,8 +124,14 @@ int main()
         {
             ImGui::SFML::ProcessEvent(event);
 
-            if (event.type == sf::Event::Closed) {
+            if (event.type == sf::Event::Closed) 
+            {
                 window.close();
+            }
+            if (event.type == sf::Event::Resized)
+            {
+                sf::FloatRect VisibleArea(0, 0, event.size.width, event.size.height);
+                window.setView(sf::View(VisibleArea));
             }
             if (event.type == sf::Event::MouseButtonPressed)
             {
@@ -119,7 +140,11 @@ int main()
 
 
                 // block everything under the Imgui Window
-                if (ClickOnImGui(MouseX + Radius, MouseY + Radius, ImGuiWindowX, ImGuiWindowY, ImGuiWindowSizeX, ImGuiWindowSizeY))
+                if (ClickOnImGui(MouseX + Radius, MouseY + Radius, RightPanelPos.x,
+                    RightPanelPos.y, RightPanelSize.x, RightPanelSize.y))
+                    continue;
+                if (ClickOnImGui(MouseX + Radius, MouseY + Radius, BottomPanelPos.x,
+                    BottomPanelPos.y, BottomPanelSize.x, BottomPanelSize.y))
                     continue;
                 if (SaveWinVisible || LoadWinVisible || BlockDrawing)
                 {
@@ -135,8 +160,9 @@ int main()
                     if (event.mouseButton.button == sf::Mouse::Left)
                     {
                         Vertex Vert(Radius);
+                        ColorVert = sf::Color(col[0] * 255, col[1] * 255, col[2] * 255);
                         Vert.SetPosition(MouseX+OffsetX, MouseY + OffsetY);
-                        Vert.shape.setFillColor(Colorcur);
+                        Vert.shape.setFillColor(ColorVert);
                         Verteces.push_back(Vert);
                     }
                     break;
@@ -151,7 +177,7 @@ int main()
                             NewEdge.StartVertex = &*ResultVert;
                             NewEdge.StartInd = (&*ResultVert)->GetIndex();
                             ResultVert->shape.setOutlineThickness(3);
-                            ResultVert->shape.setOutlineColor(sf::Color::White);
+                            ResultVert->shape.setOutlineColor(ColorEdge);
                         }
                     }
                     else
@@ -166,6 +192,10 @@ int main()
 
                             NewEdge.EndVertex = &(*ResultVert);
                             NewEdge.EndInd = (&*ResultVert)->GetIndex();
+                           
+                                ColorEdge = sf::Color(col[0] * 255, col[1] * 255, col[2] * 255);
+                           NewEdge.line[0].color = ColorEdge;
+                           NewEdge.line[1].color = ColorEdge;
                             if (NewEdge.line[1].position != NewEdge.line[0].position)
                                 Edges.push_back(NewEdge);
                         }
@@ -208,10 +238,49 @@ int main()
                     break;
                 case 3:
                     ResultVert._Ptr = nullptr;
+                    ResultEdge._Ptr = nullptr;
                     FindVertexOnTheCLick(Verteces, ResultVert, MouseX, MouseY, Radius, CirclePosition);
+                    FindEdgesOnTheCLick(Edges, ResultEdge, MouseX, MouseY, Radius);
+                    if (ResultVert._Ptr != nullptr)
+                    {
+                        Clicked = VERTEX;
+                   
+                        SelectedVertex = &(ResultVert._Ptr->_Myval);
+                        col[0] = (float)ResultVert->shape.getFillColor().r;
+                        col[1] = (float)ResultVert->shape.getFillColor().g;
+                        col[2] = (float)ResultVert->shape.getFillColor().b;
+
+                        col[0] /= 255.;
+                        col[1] /= 255.;
+                        col[2] /= 255.;
+
+                    }
+                    else if (ResultEdge._Ptr != nullptr)
+                    {
+                        Clicked = EDGE;
+
+                        SelectedEdge = &(ResultEdge._Ptr->_Myval);
+                        col[0] = (float)ResultEdge->line[0].color.r;
+                        col[1] = (float)ResultEdge->line[0].color.g;
+                        col[2] = (float)ResultEdge->line[0].color.b;
+
+                        col[0] /= 255.;
+                        col[1] /= 255.;
+                        col[2] /= 255.;
+                    }
+                    else
+                    {
+                        Clicked = BACKGROUND;
+                        col[0] = ColorBackground.r;
+                        col[1] = ColorBackground.g;
+                        col[2] = ColorBackground.b;
+
+                        col[0] /= 255.;
+                        col[1] /= 255.;
+                        col[2] /= 255.;
+                    }
+                    
                     break;
-
-
                 }
             }
             if (event.type == sf::Event::MouseButtonReleased)
@@ -235,16 +304,16 @@ int main()
                     }
                 }
             }
-            if (State == 3)
+            if (State == 3 )
             {
-                if (event.type == sf::Event::MouseMoved)
+                if (event.type == sf::Event::MouseMoved && sf::Mouse::isButtonPressed(sf::Mouse::Button::Left))
                 {
                     int MouseX = event.mouseButton.button - Radius;
                     int MouseY = event.mouseButton.x - Radius;
                     if (ResultVert._Ptr != nullptr)
                     {
                         int index = ResultVert->GetIndex();
-                        ResultVert->shape.setPosition(MouseX, MouseY);
+                        ResultVert->SetPosition(MouseX + OffsetX, MouseY + OffsetY);
                     }
                 }
             }
@@ -356,10 +425,9 @@ int main()
             ImGui::SetColumnWidth(0, 35.);
             ImGui::VSliderFloat("##labelVertical", ImVec2(15, viewport->Size.y - 150), &SliderVal, 0, 1000., "");
             ImGui::NextColumn();
-            ImGuiWindowX = ImGui::GetWindowPos().x;
-            ImGuiWindowY = ImGui::GetWindowPos().y;
-            ImGuiWindowSizeX = ImGui::GetWindowSize().x;
-            ImGuiWindowSizeY = ImGui::GetWindowSize().y;
+            RightPanelSize = ImGui::GetWindowSize();
+            RightPanelPos = ImGui::GetWindowPos();
+
 
             ImGui::RadioButton("Draw Vertex", &State, 0);            
             ImGui::RadioButton("Draw Edge", &State, 1);
@@ -381,16 +449,70 @@ int main()
         
 
         ImGui::Begin("Down");
+
+        BottomPanelSize = ImGui::GetWindowSize();
+        BottomPanelPos = ImGui::GetWindowPos();
         ImGui::SetNextItemWidth(viewport->Size.x - 150);
         ImGui::SliderFloat("##labelHorisontal", &OffsetX, 0, 1000., "");
+        ImGui::Columns(2, "locations");
+        ImGui::SetColumnWidth(0, 200);
         ImGui::PushItemWidth(100);
-        bool result = ImGui::ColorPicker3("Color", col);
-        
-        Colorcur = sf::Color(col[0] * 255, col[1] * 255, col[2] * 255);
+        bool result = ImGui::ColorPicker3("Color", *&col);
+        ImGui::NextColumn();
 
+        if (State == 3)
+        {
+            switch (Clicked)
+            {
+            case VERTEX:
+            {
+                ImGui::Text("Vertex");
+                int index = SelectedVertex->GetIndex();
+                std::string VertexId = "Id " + std::to_string(index);
+                ImGui::Text(VertexId.c_str());
+    
+                ColorVert = sf::Color(col[0] * 255, col[1] * 255, col[2] * 255);
+    
+                SelectedVertex->shape.setFillColor(ColorVert);
+            }
+            break;
+            case EDGE:
+            {
+                ImGui::Text("Edge");
+                int StartIndex = SelectedEdge->StartInd;
+                int EndIndex = SelectedEdge->EndInd;
+                std::string EdgeId = "From  " + std::to_string(StartIndex) +
+                    "  To  " + std::to_string(EndIndex);
+                ImGui::Text(EdgeId.c_str());
+
+                ColorEdge = sf::Color(col[0] * 255, col[1] * 255, col[2] * 255);
+
+                SelectedEdge->line[0].color = ColorEdge;
+                SelectedEdge->line[1].color = ColorEdge;
+            }
+            break;
+            case BACKGROUND:            
+                ImGui::Text("Background");
+
+                    ColorBackground = sf::Color(col[0] * 255, col[1] * 255, col[2] * 255);
+
+             break;
+
+            }
+        }
         ImGui::End();
+
+        auto WindowSize = window.getSize();
+        
+
+        sf::RectangleShape Wiewport;
+        Wiewport.setSize(sf::Vector2f(WindowSize.x - RightPanelSize.x, WindowSize.y - BottomPanelSize.y));
+        Wiewport.setFillColor(ColorBackground);
+        Wiewport.setPosition(0, 0);
         window.clear();
       
+       
+        window.draw(Wiewport);
         for (auto& i : Verteces)
         {
             i.shape.setPosition(i.X-OffsetX, i.Y - OffsetY);
