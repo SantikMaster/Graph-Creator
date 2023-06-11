@@ -423,7 +423,7 @@ int main()
         ImGui::Begin("Right");
             ImGui::Columns(2, "locations");
             ImGui::SetColumnWidth(0, 35.);
-            ImGui::VSliderFloat("##labelVertical", ImVec2(15, viewport->Size.y - 150), &SliderVal, 0, 1000., "");
+            ImGui::VSliderFloat("##labelVertical", ImVec2(15, viewport->Size.y - BottomPanelSize.y - 50), &SliderVal, 0, 1000., "");
             ImGui::NextColumn();
             RightPanelSize = ImGui::GetWindowSize();
             RightPanelPos = ImGui::GetWindowPos();
@@ -452,7 +452,7 @@ int main()
 
         BottomPanelSize = ImGui::GetWindowSize();
         BottomPanelPos = ImGui::GetWindowPos();
-        ImGui::SetNextItemWidth(viewport->Size.x - 150);
+        ImGui::SetNextItemWidth(viewport->Size.x - RightPanelSize.x - 20);
         ImGui::SliderFloat("##labelHorisontal", &OffsetX, 0, 1000., "");
         ImGui::Columns(2, "locations");
         ImGui::SetColumnWidth(0, 200);
