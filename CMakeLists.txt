@@ -8,7 +8,10 @@ file(GLOB IMGUI_FILES "${CMAKE_CURRENT_SOURCE_DIR}/imgui/*.h" "${CMAKE_CURRENT_S
 add_executable(SFML_IMGUI
 	src/main.cpp 
 	src/EdgesVerteces.h
-	src/Algorithms.hpp
+	src/Algorithms.h
+	src/Algorithms.cpp
+	src/Interface.hpp
+	src/EventManager.hpp
 	src/LoadSave.hpp
 	 ${IMGUI_FILES}
 )
