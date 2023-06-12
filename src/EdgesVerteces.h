@@ -1,8 +1,8 @@
+#pragma once
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Clock.hpp>
 #include <SFML/Window/Event.hpp>
-//#include <vector>
 
 class Vertex
 {

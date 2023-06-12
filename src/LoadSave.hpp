@@ -1,3 +1,6 @@
+#pragma once
+#include "EdgesVerteces.h"
+int Vertex::counter;
 void TextOut(const std::string& Text, const std::string& Name, const std::string& Mode = "a")
 {
     // #include <stdio.h>
@@ -42,7 +45,6 @@ void SaveGraph(const std::list<Vertex>& Circles, const std::list<Edge>& Lines, c
 
 void LoadGraph(std::list<Vertex>& Circles, std::list<Edge>& Edges, const std::string& Path, float Radius)
 {
-    //#include <sstream> <fstream>
     std::ifstream stream(Path);
 
     Circles.clear();

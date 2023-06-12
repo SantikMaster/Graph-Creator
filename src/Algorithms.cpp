@@ -1,3 +1,7 @@
+#include <list>
+
+#include "EdgesVerteces.h"
+#include "Algorithms.h"
 bool DFS(std::list<Vertex>& Verteces, std::list<Edge>& Edges, Vertex* Vert, int ComponentId)
 {
     if (Vert->Visited == true)
@@ -6,7 +10,7 @@ bool DFS(std::list<Vertex>& Verteces, std::list<Edge>& Edges, Vertex* Vert, int 
     }
     Vert->Visited = true;
     Vert->ComponentId = ComponentId;
-    for (auto Ed = Edges.begin(); Ed != Edges.end(); ++Ed)
+    for (std::list<Edge>::iterator Ed = Edges.begin(); Ed != Edges.end(); ++Ed)
     {
         if (Ed->EndVertex == nullptr)
         {
@@ -72,10 +76,11 @@ void ConnectedComponent(std::list<Vertex>& Verteces, std::list<Edge>& Edges)
         }
     }
 }
+
 bool ClickOnImGui(int MouseX, int  MouseY, int ImGuiWindowX, int  ImGuiWindowY, int  ImGuiWindowSizeX, int  ImGuiWindowSizeY)
 {
     if (MouseY < 20)
-            return true;
+        return true;
     if ((MouseX > ImGuiWindowX && MouseX < ImGuiWindowX + ImGuiWindowSizeX) &&
         (MouseY > ImGuiWindowY && MouseY < ImGuiWindowY + ImGuiWindowSizeY)
         )
@@ -110,7 +115,7 @@ bool FindEdgesOnTheCLick(const std::list<Edge>& Lines,
 {
     for (auto it = Lines.begin(); it != Lines.end(); ++it)
     {
-        auto Bounds = (*it).line.getBounds();
+        sf::FloatRect Bounds = (*it).line.getBounds();
 
         if (!Bounds.contains(MouseX + Radius, MouseY + Radius))
             continue;
