@@ -3,45 +3,106 @@
 #include <list>
 #include <sstream>
 #include <fstream>
+#include <chrono>
+#include <thread>
 
 #include "imgui_internal.h"
 
 #include "LoadSave.hpp"
 #include "EventManager.hpp"
-int State = 0;
 
-void ImGuiWin(bool& WinVisible, bool Save, std::list<Vertex>& Verteces, std::list<Edge>& Edges, float Radius)
+#include <SFML/Graphics/RenderTexture.hpp>
+#include <SFML/Graphics/Sprite.hpp>
+
+
+
+enum KindOfWindow
 {
-    if (Save == true)
+    SAVE_XML,
+    LOAD_XML,
+    SAVE_JPG,
+};
+
+void ImGuiWin(bool& WinVisible, KindOfWindow WinState, std::list<Vertex>& Verteces, std::list<Edge>& Edges,
+    float Radius, sf::RenderWindow& window, GraphProperties& Properties)
+{    
+    static std::string StrName;
+  //   char Name[128] = "C:/temp/graph1.xml";
+    char Name[128] = "C:/temp/graph1.xml";
+
+    switch (WinState)
     {
+    case SAVE_XML:
         ImGui::Begin("Save Graph to File");
-    }
-    else
-    {
-        ImGui::Begin(" Load From File");
-    }
-    ImGui::Text("Enter the name of the file");
-    static char Name[128] = "C:/temp/graph1.xml";
-    ImGui::Text("Path: ");
-    ImGui::SameLine();
-    ImGui::InputText("", Name, IM_ARRAYSIZE(Name));
-    if (Save == true)
-    {
+        ImGui::Text("Enter the name of the file");
+       
+        StrName = "C:/temp/graph1.xml";
+        strcpy(Name, StrName.c_str());
+        ImGui::Text("Path: ");
+        ImGui::SameLine();
+
+       ImGui::InputText("", Name, IM_ARRAYSIZE(Name));
         if (ImGui::Button("Save"))
         {
             WinVisible = false;
             std::cout << "saved\n";
             SaveGraph(Verteces, Edges, Name);
         }
-    }
-    else
+    break;
+    case LOAD_XML:
     {
+        ImGui::Begin(" Load From File");
+        ImGui::Text("Enter the name of the file");
+
+        StrName = "C:/temp/graph1.xml";
+        strcpy(Name, StrName.c_str());
+        ImGui::Text("Path: ");
+        ImGui::SameLine();
+        ImGui::InputText("", Name, IM_ARRAYSIZE(Name));
         if (ImGui::Button("Load"))
         {
             WinVisible = false;
             std::cout << "load\n";
             LoadGraph(Verteces, Edges, Name, Radius);
         }
+    }        
+    break;
+    case SAVE_JPG:
+        ImGui::Begin(" Save To File");
+        ImGui::Text("Enter the name of the file");
+        StrName = "C:/temp/graph1.jpg";
+        strcpy(Name, StrName.c_str());
+        ImGui::Text("Path: ");
+        ImGui::SameLine();
+        ImGui::InputText("", Name, IM_ARRAYSIZE(Name));
+        if (ImGui::Button("Save"))
+        {
+            WinVisible = false;
+        
+            ImGui::End();
+                   using namespace std::chrono_literals;
+                    std::this_thread::sleep_for(200ms);
+
+                    std::cout << "jpg saved\n";
+                    sf::Image Screenshot;
+                    Screenshot = window.capture();
+
+                    sf::Vector2u windowSize = window.getSize();
+                    sf::Texture texture;
+
+                    texture.loadFromImage(Screenshot, sf::IntRect(0, 20, windowSize.x - Properties.RightPanelSize.x - 5,
+                        windowSize.y - Properties.BottomPanelSize.y - 25));
+
+                    sf::Image ScreenshotCut = texture.copyToImage();
+                    ScreenshotCut.saveToFile(Name);
+
+         /*   std::thread th([](sf::RenderWindow& window, GraphProperties& Properties, std::string &Name)
+            {
+
+            },  window,  Properties, Name);
+            th.detach();*/ 
+        }
+        break;
     }
 
     ImGui::SameLine();
@@ -51,10 +112,12 @@ void ImGuiWin(bool& WinVisible, bool Save, std::list<Vertex>& Verteces, std::lis
     }
     ImGui::End();
 }
-void BuildInterface(GraphProperties& Properties)
+void BuildInterface(sf::RenderWindow& window, GraphProperties& Properties)
 {
     static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
 
+    static int State;
+    static bool JpgExport;
     // We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
     // because it would be confusing to have two docking targets within each others.
     ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
@@ -124,10 +187,16 @@ void BuildInterface(GraphProperties& Properties)
             if (ImGui::MenuItem("SaveToFile"))
             {
                 Properties.SaveWinVisible = true;
+                JpgExport = false;
             }
             if (ImGui::MenuItem("LoadFromFile"))
             {
                 Properties.LoadWinVisible = true;
+            }
+            if (ImGui::MenuItem("Export to jpg", "CTRL+Q"))
+            {
+                JpgExport = true;
+                Properties.SaveWinVisible = true;
             }
             if (ImGui::MenuItem("Exit", "CTRL+Q"))
             {
@@ -167,11 +236,18 @@ void BuildInterface(GraphProperties& Properties)
 
     if (Properties.SaveWinVisible)
     {
-        ImGuiWin(Properties.SaveWinVisible, true, Properties.Verteces, Properties.Edges, Properties.Radius);
+        if (!JpgExport)
+        {
+            ImGuiWin(Properties.SaveWinVisible, SAVE_XML, Properties.Verteces, Properties.Edges, Properties.Radius, window, Properties);
+        }
+       else
+            ImGuiWin(Properties.SaveWinVisible, SAVE_JPG, Properties.Verteces, Properties.Edges, Properties.Radius, window, Properties);
+
+
     }
     if (Properties.LoadWinVisible)
     {
-        ImGuiWin(Properties.LoadWinVisible, false, Properties.Verteces, Properties.Edges, Properties.Radius);
+        ImGuiWin(Properties.LoadWinVisible,  LOAD_XML, Properties.Verteces, Properties.Edges, Properties.Radius, window, Properties);
     }
 
     ImGui::End();
@@ -225,6 +301,20 @@ void BuildInterface(GraphProperties& Properties)
 
             Properties.ColorBackground = sf::Color(Properties.col[0] * 255, Properties.col[1] * 255, Properties.col[2] * 255);
 
+            if (ImGui::Button("Save"))
+            {
+                sf::Image Screenshot;
+                Screenshot = window.capture();
+
+                sf::Vector2u windowSize = window.getSize();
+                sf::Texture texture;
+
+                texture.loadFromImage(Screenshot, sf::IntRect(0,20, windowSize.x - Properties.RightPanelSize.x-5,
+                             windowSize .y - Properties.BottomPanelSize.y-25));
+ 
+                sf::Image ScreenshotCut = texture.copyToImage();
+                ScreenshotCut.saveToFile("C:/temp/screenshot.jpg");
+            }
             break;
 
         }

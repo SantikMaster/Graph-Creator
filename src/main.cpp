@@ -41,7 +41,7 @@ int main()
 
         ImGui::SFML::Update(window, Properties.deltaClock.restart());
 
-        BuildInterface(Properties);
+        BuildInterface(window, Properties);
 
         auto WindowSize = window.getSize();
 
